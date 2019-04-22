@@ -1,0 +1,24 @@
+node('master') {
+    def commit_id
+    def mvnHome
+stage('prepration') {
+checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/aerada/hello-dropwizard.git']]])
+}
+stage('Build'){
+       mvnHome = tool 'MAVEN'
+			sh "${mvnHome}/bin/mvn package"
+		}
+		
+stage('Deploy to Nexus'){
+    mvnHome = tool 'MAVEN'
+    sh "${mvnHome}/bin/mvn clean deploy -Dmaven.test.skip=true"
+}
+
+stage ('Docker build and push to dockerhub'){
+    docker.withRegistry('https://adiacr.azurecr.io', '2c2bf89e-bf22-44c2-aa62-4bad7de722fa') {
+        def app = docker.build("adihello/hello-dropwizard:${Build_Number}", '.').push()
+        sh 'docker pull adiacr.azurecr.io/adihello/hello-dropwizard:1'
+}
+}
+}
+

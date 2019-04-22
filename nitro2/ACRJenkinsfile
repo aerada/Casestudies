@@ -1,0 +1,20 @@
+node('master') {
+    def commit_id
+    // some block
+stage('prepration') {
+    // some block
+checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/aerada/nitro2.git']]])
+}
+stage('Node Build & Test') {
+nodejs('nodejs') {
+  sh 'npm -v'
+  stage (' build and push to acr'){
+    docker.withRegistry('https://adiacr.azurecr.io', '2c2bf89e-bf22-44c2-aa62-4bad7de722fa') {
+        def app = docker.build("adinitro2/nitro:${Build_Number}", '.').push()
+}
+}
+}
+
+}
+}
+

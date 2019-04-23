@@ -1,0 +1,194 @@
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s# az account set --subscription fe2c9a4a-a15f-40bf-be1b-ff4f063c4ce1
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s# az aks get-credentials --resource-group Adi_resourcegroup --name Adik8s
+Merged "Adik8s" as current context in /root/.kube/config
+
+root@adikubesetup:~/k8s# helm init
+
+
+root@adikubesetup:~/k8s# kubectl apply -f helm-rbac.yaml
+
+
+root@adikubesetup:~/k8s# kubectl --namespace kube-system get pods | grep tiller
+tiller-deploy-54fc6d9ccc-qwzsr          1/1       Running   0          20h
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s# kubectl get pods
+NAME                     READY     STATUS             RESTARTS   AGE
+hello-dropwizard-5rj4s   0/1       ImagePullBackOff   0          2h
+hello-dropwizard-hbt9m   0/1       ImagePullBackOff   0          2h
+hello-dropwizard-hjtq8   0/1       ImagePullBackOff   0          2h
+
+
+root@adikubesetup:~/k8s# ls -ltr
+total 24
+-rw-r--r-- 1 root root  646 Apr 17 10:31 ingress.yaml
+-rw-r--r-- 1 root root    6 Apr 17 10:31 README.md
+-rw-r--r-- 1 root root   91 Apr 17 10:31 Chart.yaml
+-rw-r--r-- 1 root root  349 Apr 22 13:34 helm-rbac.yaml
+drwxr-xr-x 2 root root 4096 Apr 22 15:03 templates
+-rw-r--r-- 1 root root  340 Apr 22 15:07 values.yaml
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s# helm init
+$HELM_HOME has been configured at /root/.helm.
+Warning: Tiller is already installed in the cluster.
+(Use --client-only to suppress this message, or --upgrade to upgrade Tiller to the current version.)
+Happy Helming!
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s#
+root@adikubesetup:~/k8s# helm install .
+NAME:   opulent-hog
+LAST DEPLOYED: Tue Apr 23 09:50:57 2019
+NAMESPACE: default
+STATUS: DEPLOYED
+
+RESOURCES:
+==> v1/Namespace
+NAME              STATUS  AGE
+hello-dropwizard  Active  0s
+
+==> v1/Pod(related)
+NAME                            READY  STATUS             RESTARTS  AGE
+java-demo-app-75cb577bb5-4t772  0/1    ContainerCreating  0         0s
+java-demo-app-75cb577bb5-dttld  0/1    ContainerCreating  0         0s
+java-demo-app-75cb577bb5-m6k27  0/1    ContainerCreating  0         0s
+
+==> v1/Service
+NAME           TYPE          CLUSTER-IP   EXTERNAL-IP  PORT(S)         AGE
+java-demo-app  LoadBalancer  10.0.76.136  <pending>    8080:30448/TCP  0s
+
+==> v1beta1/Deployment
+NAME           READY  UP-TO-DATE  AVAILABLE  AGE
+java-demo-app  0/3    3           0          0s
+
+
+NOTES:
+1. Get the application URL by running these commands:
+  http://hello-dropwizard.example.com
+
+
+ =======================================================================================
+liveness: if container is not ready , kill the container , restart the pod 
+rediness: container is ready to serve the requests or not , pod is receiving the traffic
+
+
+kubectl delete pod hello-dropwizard-fc6c88856-95z89 -n dev
+
+kubectl apply -f liveness.yaml
+
+kubectl describe pod hello-dropwizard-fc6c88856-th596  liveness-exec -n dev
+
+=========================================
+
+hpa ( autoscale)
+
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl apply -f hpa.yml
+horizontalpodautoscaler "hello-dropwizard" unchanged
+
+ kubectl get hpa -n dev
+ 
+NAME               REFERENCE                     TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+hello-dropwizard   Deployment/hello-dropwizard   1% / 5%   1         5         1          2h
+
+==================================================
+
+deamonset :
+
+A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. As nodes are added to the cluster, Pods are added to them. 
+As nodes are removed from the cluster, those Pods are garbage collected. Deleting a DaemonSet will clean up the Pods it created.
+
+kubectl apply -f deamonset.yaml
+
+kubectl get nodes -n dev
+
+kubectl label nodes aks-agentpool-28202927-1  ssd=true
+
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get nodes --selector ssd=true
+NAME                       STATUS    ROLES     AGE       VERSION
+aks-agentpool-28202927-1   Ready     agent     21h       v1.11.9
+
+ kubectl label nodes aks-agentpool-28202927-0  ssd=true
+ 
+ kubectl get pods -o wide
+ 
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get pods -o wide
+NAME                     READY     STATUS             RESTARTS   AGE       IP            NODE
+hello-dropwizard-b48hd   0/1       ImagePullBackOff   0          32m       10.244.1.10   aks-agentpool-28202927-1
+hello-dropwizard-cq7qj   1/1       Running            0          5m        10.244.1.12   aks-agentpool-28202927-1
+hello-dropwizard-ldgll   1/1       Running            0          2m        10.244.2.18   aks-agentpool-28202927-0
+hello-dropwizard-nq54g   0/1       ImagePullBackOff   0          32m       10.244.2.15   aks-agentpool-28202927-0
+hello-dropwizard-xbvll   0/1       ImagePullBackOff   0          32m       10.244.0.19   aks-agentpool-28202927-2
+
+
+root@adikubesetup:~/hello-dropwizard/k8s#  kubectl delete ds hello-dropwizard
+daemonset "hello-dropwizard" deleted
+
+
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get pods -o wide
+NAME                     READY     STATUS             RESTARTS   AGE       IP            NODE
+hello-dropwizard-b48hd   0/1       ImagePullBackOff   0          34m       10.244.1.10   aks-agentpool-28202927-1
+hello-dropwizard-nq54g   0/1       ImagePullBackOff   0          34m       10.244.2.15   aks-agentpool-28202927-0
+hello-dropwizard-xbvll   0/1       ImagePullBackOff   0     
+
+================================================
+ 
+replication controllers
+
+A ReplicationController ensures that a specified number of pod replicas are running at any one time. 
+In other words, a ReplicationController makes sure that a pod or a homogeneous set of pods is always up and available.
+
+Replication Controller is one of the key features of Kubernetes, which is responsible for managing the pod lifecycle.
+ It is responsible for making sure that the specified number of pod replicas are running at any point of time. 
+It is used in time when one wants to make sure that the specified number of pod or at least one pod is running. 
+
+c  
+
+
+root@adikubesetup:~/hello-dropwizard/k8s#
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get pods -n dev
+No resources found.
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get pods -o wide -n dev
+No resources found.
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get rc
+NAME               DESIRED   CURRENT   READY     AGE
+hello-dropwizard   3         3         0         3h
+root@adikubesetup:~/hello-dropwizard/k8s#
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl get pods -o wide
+NAME                     READY     STATUS             RESTARTS   AGE       IP            NODE
+hello-dropwizard-b48hd   0/1       ImagePullBackOff   0          49m       10.244.1.10   aks-agentpool-28202927-1
+hello-dropwizard-nq54g   0/1       ImagePullBackOff   0          49m       10.244.2.15   aks-agentpool-28202927-0
+hello-dropwizard-xbvll   0/1       ImagePullBackOff   0          48m       10.244.0.19   aks-agentpool-28202927-2
+
+
+root@adikubesetup:~/hello-dropwizard/k8s# kubectl delete rc hello-dropwizard
+replicationcontroller "hello-dropwizard" deleted
+
+replicaset :
+helloreplicaset.yaml
+
+kubectl get rs
+
+kubectl describe rs/hello-dropwizard
+
+kubectl get Pods -n dev
+
+config map
+
+Populate the values of environment variables.
+Set command-line arguments in a container.
+Populate config files in a volume.
+                                                                                                                                                                                                                                                                                                                                                                                                 c                                                                                                                                                                                                                                                                                                                                                                 It has the capability to bring up or down the specified no of pod.
+
+
+
+
+
+
+
+
+
+
+ 
+  
